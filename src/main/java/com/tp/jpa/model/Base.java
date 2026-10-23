@@ -22,7 +22,7 @@ public abstract class Base {
     private Long id;
 
     @Builder.Default
-    private final boolean eliminado = false;
+    private boolean eliminado = false;
 
     @Builder.Default
     private final LocalDateTime createdAt = LocalDateTime.now();
