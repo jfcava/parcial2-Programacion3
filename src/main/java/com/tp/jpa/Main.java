@@ -1,6 +1,7 @@
 package com.tp.jpa;
 
 import com.tp.jpa.model.Categoria;
+import com.tp.jpa.model.Producto;
 import com.tp.jpa.repository.CategoriaRepository;
 import com.tp.jpa.util.JPAUtil;
 import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToFile;
@@ -72,6 +73,7 @@ public class Main {
             switch (opc){
                 case 1 -> altaCategoria();
                 case 2 -> modificarCategoria();
+                case 3 -> bajaCategoria();
                 case 4 -> listarCategorias();
                 case 0 -> ejecutando = false;
                 default -> System.out.println("  [!] Opción inválida. Intente de nuevo.");
@@ -180,7 +182,48 @@ public class Main {
         System.out.println("\n  [*] Categoría modificada con éxito.");
         System.out.println("  Presione Enter para continuar...");
         scanner.nextLine();
+    }
 
+    public static void bajaCategoria(){
+        if(!listarCategoriasActivas()){
+            System.out.println("\nPresione Enter para continuar...");
+            scanner.nextLine();
+            return;
+        }
+
+        Long id = (long)leerEntero("Ingrese el ID de la categoría a eliminar: ");
+
+        Optional<Categoria> optCategoria = categoriaRepo.buscarPorId(id);
+
+        if (optCategoria.isEmpty() || optCategoria.get().isEliminado()) {
+            System.out.println("\n  [!] Error: Categoría no encontrada o ya dada de baja.");
+            System.out.println("  Presione Enter para continuar...");
+            scanner.nextLine();
+            return;
+        }
+
+        Categoria cat = optCategoria.get();
+
+        List<Producto> productosActivos = categoriaRepo.buscarProductosPorCategoria(id);
+        if(!productosActivos.isEmpty()){
+            System.out.println("\n  [!] La categoría no se puede dar de baja porque tiene "
+                    + productosActivos.size() + " producto(s) activo(s) asociado(s).");
+            System.out.println("  Debe dar de baja o reasignar los productos primero.");
+            System.out.println("  Presione Enter para continuar...");
+            scanner.nextLine();
+            return;
+        }
+
+        boolean exito = categoriaRepo.eliminarLogico(id);
+
+        if (exito) {
+            System.out.println("\n  [✓] Baja lógica confirmada para la categoría: " + cat.getNombre());
+        } else {
+            System.out.println("\n  [!] Error: Categoría no encontrada o ya dada de baja");
+        }
+
+        System.out.println("  Presione Enter para continuar...");
+        scanner.nextLine();
 
     }
 
