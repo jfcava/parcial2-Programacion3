@@ -1,14 +1,25 @@
 package com.tp.jpa;
 
+import com.tp.jpa.model.Categoria;
+import com.tp.jpa.repository.CategoriaRepository;
+import com.tp.jpa.util.JPAUtil;
 import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToFile;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Main {
+
+    private static final Scanner scanner = new Scanner(System.in);
+    private static final CategoriaRepository categoriaRepo = new CategoriaRepository();
+
     public static void main(String[] args) {
 
-        //Consultar sobre
-        //Logger.getLogger("org.hibernate").setLevel(Level.SEVERE);
+        //Filtrar el nivel de logs que la librería de Hibernate imprime en la consola
+        Logger.getLogger("org.hibernate").setLevel(Level.SEVERE);
 
         Scanner sc = new Scanner(System.in);
         boolean ejecutando = true;
@@ -19,21 +30,23 @@ public class Main {
 
         while(ejecutando){
             mostrarMenuPrincipal();
-            int opc = Integer.parseInt(sc.nextLine());
+            int opc = leerEntero("Seleccione una opción: ");
 
-            if(opc == 1) {
-                System.out.println("Sos un capo Juan!");
-
+            switch (opc){
+                case 1 -> menuCategorias();
+                case 2 -> menuProductos();
+                case 3 -> menuReportes();
+                case 0 -> ejecutando = false;
+                default -> System.out.println("  [!] Opción inválida. Intente de nuevo.");
             }
-            if(opc == 0) ejecutando = false;
-
         }
-        System.out.println("Gracias por usar nuestro software!");
-
+        System.out.println("\n  Cerrando conexión con la base de datos...");
+        JPAUtil.close();
+        System.out.println("  ¡Hasta luego!");
     }
 
-    public static void mostrarMenuPrincipal(){
-        System.out.println("========================");
+    private static void mostrarMenuPrincipal() {
+        System.out.println("\n========================");
         System.out.println("     MENÚ PRINCIPAL     ");
         System.out.println("========================");
         System.out.println(" 1. Gestionar Categorías");
@@ -41,8 +54,177 @@ public class Main {
         System.out.println(" 3. Reportes");
         System.out.println(" 0. Salir");
         System.out.println("------------------------");
-        System.out.print("Seleccione una opción: ");
     }
 
+    // Metodos Menu Principal
+    public static void menuCategorias(){
+        boolean ejecutando = true;
+        while(ejecutando){
+            System.out.println("\n  -- Submenu: Categorías ------");
+            System.out.println("  1. Alta de categoría");
+            System.out.println("  2. Modificar categoría");
+            System.out.println("  3. Baja lógica de categoría");
+            System.out.println("  4. Listar categorías activas");
+            System.out.println("  0. Volver al menú principal");
+            System.out.println("  -------------------------------");
+            int opc = leerEntero("Seleccione una opción: ");
 
+            switch (opc){
+                case 1 -> altaCategoria();
+                case 2 -> modificarCategoria();
+                case 4 -> listarCategorias();
+                case 0 -> ejecutando = false;
+                default -> System.out.println("  [!] Opción inválida. Intente de nuevo.");
+            }
+        }
+    }
+
+    public static void menuProductos(){
+        boolean ejecutando = true;
+        while(ejecutando){
+            System.out.println("\n  -- Submenu: Productos ------");
+            System.out.println("  1. Alta de producto");
+            System.out.println("  2. Modificar producto");
+            System.out.println("  3. Baja lógica de producto");
+            System.out.println("  4. Listar productos activos");
+            System.out.println("  0. Volver al menú principal");
+            System.out.println("  -------------------------------");
+            int opc = leerEntero("Seleccione una opción: ");
+
+            switch (opc){
+                case 1 -> System.out.println("Aca das un alta a una producto");
+                case 0 -> ejecutando = false;
+                default -> System.out.println("  [!] Opción inválida. Intente de nuevo.");
+            }
+        }
+    }
+
+    public static void menuReportes(){
+        boolean ejecutando = true;
+        while(ejecutando){
+            System.out.println("\n  -- Submenu: Reportes ------");
+            System.out.println("  1. Productos por categoría (JPQL)");
+            System.out.println("  0. Volver al menú principal");
+            System.out.println("  -------------------------------");
+            int opc = leerEntero("Seleccione una opción: ");
+
+            switch (opc){
+                case 1 -> System.out.println("Aca mostras el reporte");
+                case 0 -> ejecutando = false;
+                default -> System.out.println("  [!] Opción inválida. Intente de nuevo.");
+            }
+        }
+    }
+
+    // Metodos Categorias
+    public static void altaCategoria(){
+        System.out.println("\n[ALTA DE CATEGORÍA]");
+        System.out.print("Ingrese el nombre de la categoría (Obligatorio): ");
+        String nombre = scanner.nextLine().trim();
+
+        if(nombre.isEmpty()){
+            System.out.println("  [!] ERROR: El nombre de la categoría no puede estar vacío.");
+            System.out.println("\nPresione Enter para continuar...");
+            scanner.nextLine();
+            return;
+        }
+
+        System.out.print("Ingrese descripción (Opcional): ");
+        String descripcion = scanner.nextLine().trim();
+
+        Categoria nuevaCategoria = Categoria.builder()
+                .nombre(nombre)
+                .descripcion(descripcion.isEmpty() ? null : descripcion)
+                .build();
+
+
+        Categoria catPersistida = categoriaRepo.guardar(nuevaCategoria);
+        System.out.println("\n  -- Categoría creada con éxito [Id: " + catPersistida.getId() + "]");
+        System.out.println("\nPresione Enter para continuar...");
+        scanner.nextLine();
+    }
+
+    public static void modificarCategoria(){
+        if(!listarCategoriasActivas()){
+            System.out.println("\nPresione Enter para continuar...");
+            scanner.nextLine();
+            return;
+        }
+        Long id = (long)leerEntero("Ingrese el ID de la categoría a modificar: ");
+        Optional<Categoria> optCategoria = categoriaRepo.buscarPorId(id);
+
+        if(optCategoria.isEmpty() || optCategoria.get().isEliminado()){
+            System.out.println("\n  [!] No se encontró una categoría activa con el ID " + id);
+            System.out.println("  Presione Enter para continuar...");
+            scanner.nextLine();
+            return;
+        }
+
+        Categoria cat = optCategoria.get();
+        System.out.println("\nValores actuales -> [Nombre: " + cat.getNombre() + " | Descripción: " + cat.getDescripcion() + "]");
+        System.out.println("(Deje el campo en blanco y presione ENTER si no desea modificar el valor)");
+
+        System.out.print("Nuevo Nombre: ");
+        String nuevoNombre = scanner.nextLine().trim();
+        if(!nuevoNombre.isEmpty()){
+            cat.setNombre(nuevoNombre);
+        }
+
+        System.out.print("Nueva Descripción: ");
+        String nuevaDescripcion = scanner.nextLine().trim();
+        if(!nuevaDescripcion.isEmpty()){
+            cat.setDescripcion(nuevaDescripcion);
+        }
+
+        categoriaRepo.guardar(cat);
+        System.out.println("\n  [*] Categoría modificada con éxito.");
+        System.out.println("  Presione Enter para continuar...");
+        scanner.nextLine();
+
+
+    }
+
+    public static void listarCategorias(){
+        System.out.println("\n>> [Listado de Categorías Activas]");
+        listarCategoriasActivas();
+        System.out.println("\nPresione Enter para continuar...");
+        scanner.nextLine();
+    }
+
+    public static boolean listarCategoriasActivas(){
+        List<Categoria> catActivas = categoriaRepo.listarActivos();
+
+        if(catActivas.isEmpty()){
+            System.out.println("  :( No hay categorías activas registradas.");
+            return false;
+        }
+
+        System.out.println("\n>> [Listado de Categorías Activas]");
+        System.out.printf("%-5s %-20s %-30s%n", "ID", "Nombre", "Descripción");
+        System.out.println("------------------------------------------------------------------");
+
+        for (Categoria cat : catActivas){
+            String descripcion = Optional.ofNullable(cat.getDescripcion())
+                    .filter(d -> !d.isBlank())
+                    .orElse("Sin descripción");
+
+            System.out.printf("%-5d %-20s %-30s%n", cat.getId(), cat.getNombre(), descripcion);
+        }
+        System.out.println("------------------------------------------------------------------");
+        return true;
+    }
+
+    // Metodos auxiliares
+    private static int leerEntero(String mensaje){
+        while(true){
+            try{
+                System.out.print(mensaje);
+                String entrada = scanner.nextLine().trim();
+                return Integer.parseInt(entrada);
+            }catch(NumberFormatException e){
+                System.out.println("  [!] Entrada inválida. Debe ingresar un número entero.");
+            }
+            System.out.println();
+        }
+    }
 }

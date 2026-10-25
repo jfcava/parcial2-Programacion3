@@ -25,8 +25,8 @@ https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd"
                       value="org.hibernate.dialect.H2Dialect"/>
             <!-- Hibernate -->
             <property name="hibernate.hbm2ddl.auto" value="update"/>
-            <property name="hibernate.show_sql" value="true"/>
-            <property name="hibernate.format_sql" value="true"/>
+<!--            <property name="hibernate.show_sql" value="true"/>-->
+<!--            <property name="hibernate.format_sql" value="true"/>-->
         </properties>
     </persistence-unit>
 </persistence>
