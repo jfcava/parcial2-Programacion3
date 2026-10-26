@@ -94,7 +94,7 @@ public class Main {
             int opc = leerEntero("Seleccione una opción: ");
 
             switch (opc){
-                case 1 -> System.out.println("Aca das un alta a una producto");
+                case 1 -> altaProducto();
                 case 0 -> ejecutando = false;
                 default -> System.out.println("  [!] Opción inválida. Intente de nuevo.");
             }
@@ -139,9 +139,14 @@ public class Main {
                 .descripcion(descripcion.isEmpty() ? null : descripcion)
                 .build();
 
+        try {
+            Categoria catPersistida = categoriaRepo.guardar(nuevaCategoria);
+            System.out.println("\n  -- Categoría creada con éxito [Id: " + catPersistida.getId() + "]");
+        } catch (Exception e) {
+            System.out.println("\n  [!] ERROR: No se pudo guardar la categoría.");
+            System.out.println("  Mas Info: " + e.getMessage());
+        }
 
-        Categoria catPersistida = categoriaRepo.guardar(nuevaCategoria);
-        System.out.println("\n  -- Categoría creada con éxito [Id: " + catPersistida.getId() + "]");
         System.out.println("\nPresione Enter para continuar...");
         scanner.nextLine();
     }
@@ -214,12 +219,17 @@ public class Main {
             return;
         }
 
-        boolean exito = categoriaRepo.eliminarLogico(id);
+        try {
+            boolean exito = categoriaRepo.eliminarLogico(id);
 
-        if (exito) {
-            System.out.println("\n  [✓] Baja lógica confirmada para la categoría: " + cat.getNombre());
-        } else {
-            System.out.println("\n  [!] Error: Categoría no encontrada o ya dada de baja");
+            if (exito) {
+                System.out.println("\n  [✓] Baja lógica confirmada para la categoría: " + cat.getNombre());
+            } else {
+                System.out.println("\n  [!] Error: Categoría no encontrada o ya dada de baja");
+            }
+        }catch (Exception e){
+            System.out.println("\n  [!] ERROR al intentar la baja lógica.");
+            System.out.println("  Mas info: " + e.getMessage());
         }
 
         System.out.println("  Presione Enter para continuar...");
@@ -238,7 +248,7 @@ public class Main {
         List<Categoria> catActivas = categoriaRepo.listarActivos();
 
         if(catActivas.isEmpty()){
-            System.out.println("  :( No hay categorías activas registradas.");
+            System.out.println("  [!] No hay categorías activas registradas.");
             return false;
         }
 
@@ -257,17 +267,109 @@ public class Main {
         return true;
     }
 
+    // Metodos Productos
+    public static void altaProducto(){
+        if(!listarCategoriasActivas()){
+            System.out.println("  (Agregue una Categoría antes de agregar un Producto)");
+            System.out.println("  Presione Enter para continuar...");
+            scanner.nextLine();
+            return;
+        }
+
+        System.out.println("=== INGRESAR NUEVO PRODUCTO:");
+        System.out.println("(Presione Enter para dejar vacío");
+        Long idCategoria = (long)leerEntero("\nID Categoría (Obligatorio):  ");
+        Optional<Categoria> optCategoria = categoriaRepo.buscarPorId(idCategoria);
+
+        if(optCategoria.isEmpty() || optCategoria.get().isEliminado()){
+            System.out.println("\n  [!] Error: La categoría seleccionada no existe o está dada de baja.");
+            System.out.println("  Presione Enter para continuar...");
+            scanner.nextLine();
+            return;
+        }
+
+        Categoria categoria = optCategoria.get();
+
+
+        String nombre = leerCadena("  Nombre: ");
+
+        System.out.print("  Descripción: ");
+        String descripcion = scanner.nextLine().trim();
+
+        Double precio = leerDouble("  Precio: ");
+
+        System.out.print("  URL Imagen: ");
+        String imagen = scanner.nextLine().trim();
+
+        System.out.print("  ¿Está disponible? (S/N) [Por Defecto S]: ");
+        String respuesta = scanner.nextLine().trim().toUpperCase();
+
+        boolean disponible = !respuesta.equals("N");
+
+        Producto nuevoProducto = Producto.builder()
+                .nombre(nombre)
+                .descripcion(descripcion.isBlank() ? null : descripcion)
+                .precio(precio)
+                .imagen(imagen.isBlank() ? null : imagen)
+                .disponible(disponible)
+                .build();
+
+        try {
+            Producto productoPersistido = categoriaRepo.agregarProducto(idCategoria, nuevoProducto);
+            System.out.println("\n  [✓] Producto agregado con éxito. ");
+            System.out.println("  ID generado: " + productoPersistido.getId());
+            System.out.println("  Categoría asignada: " + categoria.getNombre());
+        } catch (Exception e) {
+            System.out.println("\n  [!] Error al dar de alta el producto: " + e.getMessage());
+        }
+    }
+
     // Metodos auxiliares
     private static int leerEntero(String mensaje){
         while(true){
             try{
                 System.out.print(mensaje);
                 String entrada = scanner.nextLine().trim();
-                return Integer.parseInt(entrada);
+                int entradaInt = Integer.parseInt(entrada);
+                if(entradaInt >= 0){
+                    return entradaInt;
+                }else{
+                    System.out.println("  [!] Entrada inválida. Debe ingresar un número mayor o igual a 0.");
+                }
             }catch(NumberFormatException e){
                 System.out.println("  [!] Entrada inválida. Debe ingresar un número entero.");
             }
             System.out.println();
+        }
+    }
+
+    private static Double leerDouble(String mensaje){
+        while(true){
+            try {
+                System.out.print(mensaje);
+                String entrada = scanner.nextLine().trim();
+                Double entradaDouble = Double.parseDouble(entrada);
+                if(entradaDouble > 0) {
+                    return entradaDouble;
+                }else{
+                    System.out.println("  [!] Entrada inválida. Debe ingresar un número positivo.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("  [!] Entrada inválida. Debe ingresar un número entero o decimal.");
+            }
+        }
+    }
+
+    private static String leerCadena(String mensaje){
+        while(true){
+            System.out.print(mensaje);
+            String entrada = scanner.nextLine().trim();
+
+            if(!entrada.isBlank()){
+                return entrada;
+            }
+
+            System.out.println("  [!] ERROR: Este campo no puede estar vacío. Intente de nuevo.\n");
         }
     }
 }
