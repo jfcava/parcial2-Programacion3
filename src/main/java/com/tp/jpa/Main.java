@@ -3,6 +3,7 @@ package com.tp.jpa;
 import com.tp.jpa.model.Categoria;
 import com.tp.jpa.model.Producto;
 import com.tp.jpa.repository.CategoriaRepository;
+import com.tp.jpa.repository.ProductoRepository;
 import com.tp.jpa.util.JPAUtil;
 import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToFile;
 
@@ -16,6 +17,7 @@ public class Main {
 
     private static final Scanner scanner = new Scanner(System.in);
     private static final CategoriaRepository categoriaRepo = new CategoriaRepository();
+    private static final ProductoRepository productoRepo = new ProductoRepository();
 
     public static void main(String[] args) {
 
@@ -95,6 +97,7 @@ public class Main {
 
             switch (opc){
                 case 1 -> altaProducto();
+                case 4 -> listarProductos();
                 case 0 -> ejecutando = false;
                 default -> System.out.println("  [!] Opción inválida. Intente de nuevo.");
             }
@@ -298,6 +301,8 @@ public class Main {
 
         Double precio = leerDouble("  Precio: ");
 
+        int stock = leerEntero("  Stock: ");
+
         System.out.print("  URL Imagen: ");
         String imagen = scanner.nextLine().trim();
 
@@ -310,6 +315,7 @@ public class Main {
                 .nombre(nombre)
                 .descripcion(descripcion.isBlank() ? null : descripcion)
                 .precio(precio)
+                .stock(stock)
                 .imagen(imagen.isBlank() ? null : imagen)
                 .disponible(disponible)
                 .build();
@@ -322,6 +328,35 @@ public class Main {
         } catch (Exception e) {
             System.out.println("\n  [!] Error al dar de alta el producto: " + e.getMessage());
         }
+    }
+
+    public static void listarProductos(){
+        System.out.println("\n>> Listado de Productos Activos");
+        listarProductosActivos();
+        System.out.println("\nPresione Enter para continuar...");
+        scanner.nextLine();
+    }
+
+    public static boolean listarProductosActivos(){
+        List<Object[]> resultados = productoRepo.listarProductosConCategoriaJPQL();
+
+        if(resultados.isEmpty()){
+            System.out.println("  [!] No hay productos activos registrados.");
+            return false;
+        }
+
+        System.out.println("\n>> Listado de Productos Activos");
+        System.out.printf("%-5s %-20s %-12s %-8s %-12s %-15s%n", "ID", "Nombre", "Precio", "Stock", "Disponible", "Categoría");
+        System.out.println("------------------------------------------------------------------");
+
+        for (Object[] fila : resultados){
+            Producto p = (Producto)fila[0];
+            String nombreCat = (String)fila[1];
+
+            System.out.printf("%-5s %-20s %-12s %-8s %-12s %-15s%n", p.getId(), p.getNombre(), "$" + p.getPrecio(), p.getStock(), p.isDisponible() ? "Si" : "No", nombreCat);
+        }
+        System.out.println("------------------------------------------------------------------");
+        return true;
     }
 
     // Metodos auxiliares
