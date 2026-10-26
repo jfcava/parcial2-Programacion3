@@ -5,7 +5,6 @@ import com.tp.jpa.model.Producto;
 import com.tp.jpa.repository.CategoriaRepository;
 import com.tp.jpa.repository.ProductoRepository;
 import com.tp.jpa.util.JPAUtil;
-import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,7 +23,6 @@ public class Main {
         //Filtrar el nivel de logs que la librería de Hibernate imprime en la consola
         Logger.getLogger("org.hibernate").setLevel(Level.SEVERE);
 
-        Scanner sc = new Scanner(System.in);
         boolean ejecutando = true;
 
         System.out.println("#############################################");
@@ -330,6 +328,9 @@ public class Main {
         } catch (Exception e) {
             System.out.println("\n  [!] Error al dar de alta el producto: " + e.getMessage());
         }
+
+        System.out.println("\nPresione Enter para continuar...");
+        scanner.nextLine();
     }
 
     public static void modificarProducto(){
@@ -449,15 +450,17 @@ public class Main {
 
         System.out.println("\n>> Listado de Productos Activos");
         System.out.printf("%-5s %-20s %-12s %-8s %-12s %-15s%n", "ID", "Nombre", "Precio", "Stock", "Disponible", "Categoría");
-        System.out.println("------------------------------------------------------------------");
+        System.out.println("--------------------------------------------------------------------------------");
 
         for (Object[] fila : resultados){
             Producto p = (Producto)fila[0];
             String nombreCat = (String)fila[1];
 
-            System.out.printf("%-5s %-20s %-12s %-8s %-12s %-15s%n", p.getId(), p.getNombre(), "$" + p.getPrecio(), p.getStock(), p.isDisponible() ? "Si" : "No", nombreCat);
+            String precioFormateado = String.format("$%.2f", p.getPrecio()).replace('.',',');
+
+            System.out.printf("%-5d %-20s %-12s %-8d %-12s %-15s%n", p.getId(), p.getNombre(), precioFormateado, p.getStock(), p.isDisponible() ? "Si" : "No", nombreCat);
         }
-        System.out.println("------------------------------------------------------------------");
+        System.out.println("--------------------------------------------------------------------------------");
         return true;
     }
 
@@ -481,10 +484,13 @@ public class Main {
             System.out.println("------------------------------------------------------------------");
 
             for(Producto prod : productos){
-                System.out.printf("%-5s %-20s %-12s %-8s%n", prod.getId(), prod.getNombre(), "$" + prod.getPrecio(), prod.getStock());
+                String precioFormateado = String.format("$%.2f", prod.getPrecio()).replace('.',',');
+                System.out.printf("%-5d %-20s %-12s %-8d%n", prod.getId(), prod.getNombre(), precioFormateado, prod.getStock());
             }
             System.out.println("------------------------------------------------------------------");
         }
+        System.out.println("\nPresione Enter para continuar...");
+        scanner.nextLine();
     }
 
     // Metodos auxiliares
